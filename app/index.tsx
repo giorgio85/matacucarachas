@@ -4,7 +4,6 @@ import { Accelerometer } from 'expo-sensors';
 // Note: expo-av is deprecated but still functional. Will update when a stable replacement is available.
 import { Audio } from 'expo-av';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Haptics from 'expo-haptics';
 import squishSound from '../assets/audios/splatter.mp3';
 
 
@@ -70,17 +69,6 @@ export default function App() {
     return baseInterval * timeMultiplier;
   }, [gameTime, gameConstants.spawnInterval]);
 
-  // Performance: Memoize the haptic feedback function
-  const triggerHaptic = useCallback(async () => {
-    try {
-      // Trigger a satisfying impact haptic feedback
-      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    } catch (error) {
-      // Silently handle haptic errors to not affect gameplay
-      console.log('Haptics not available, continuing without vibration');
-    }
-  }, []);
-
   // Performance: Memoize the playSquish function
   const playSquish = useCallback(async () => {
     try {
@@ -130,15 +118,14 @@ export default function App() {
     return true;
   }, [shoeY, gameConstants.shoeDimensions]);
 
-  // Performance: Optimize kill logic with haptic feedback
+  // Performance: Optimize kill logic
   const killCockroach = useCallback((cockroach: Cockroach) => {
     if (!cockroach.alive) return;
 
     cockroach.alive = false;
     setScore(prev => prev + (cockroach.size === 50 ? 2 : 1)); // Bigger cockroaches give more points
 
-    // Trigger haptic feedback and sound simultaneously
-    triggerHaptic();
+    // Play sound and animate death
     playSquish();
 
     // Animate the death
@@ -154,7 +141,7 @@ export default function App() {
         useNativeDriver: true,
       })
     ]).start();
-  }, [playSquish, triggerHaptic]);
+  }, [playSquish]);
 
   // Performance: Optimize spawn logic for smoother gameplay with dynamic difficulty
   const spawnCockroach = useCallback(() => {
@@ -418,12 +405,12 @@ export default function App() {
         {/* Score and Level Row */}
         <View style={styles.topRow}>
           <View style={styles.scoreContainer}>
-            <Text style={styles.scoreLabel}>PUNTUACIÓN</Text>
+            <Text style={styles.scoreLabel}>SCORE</Text>
             <Text style={styles.scoreValue}>{score}</Text>
           </View>
           
           <View style={styles.levelContainer}>
-            <Text style={styles.levelLabel}>NIVEL</Text>
+            <Text style={styles.levelLabel}>LEVEL</Text>
             <Animated.Text 
               style={[
                 styles.levelValue,
@@ -436,7 +423,7 @@ export default function App() {
           </View>
           
           <View style={styles.bestContainer}>
-            <Text style={styles.bestLabel}>MEJOR</Text>
+            <Text style={styles.bestLabel}>BEST</Text>
             <Text style={[
               styles.bestValue,
               isNewRecord && styles.newRecord
@@ -451,7 +438,7 @@ export default function App() {
         <View style={styles.progressRow}>
           <View style={styles.progressContainer}>
             <Text style={styles.progressLabel}>
-              Siguiente nivel: {score % gameConfig.pointsPerLevel}/{gameConfig.pointsPerLevel}
+              Next level: {score % gameConfig.pointsPerLevel}/{gameConfig.pointsPerLevel}
             </Text>
             <View style={styles.progressBar}>
               <View 
@@ -466,7 +453,7 @@ export default function App() {
 
         {/* Speed Row */}
         <View style={styles.speedRow}>
-          <Text style={styles.speedLabel}>VELOCIDAD</Text>
+          <Text style={styles.speedLabel}>SPEED</Text>
           <Text style={styles.speedValue}>{Math.round(getDynamicSpeed(1) * 100)}%</Text>
         </View>
       </View>
