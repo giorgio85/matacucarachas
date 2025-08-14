@@ -1,13 +1,12 @@
 {
   "expo": {
-    "name": "mata-cucarachas",
+    "name": "Matacucarachas",
     "slug": "mata-cucarachas",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "matacucarachas",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "ios": {
       "supportsTablet": true
     },
@@ -16,7 +15,16 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.matacucarachas.miapp",
+      "versionCode": 1,
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.CAMERA",
+        "android.permission.VIBRATE"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -39,6 +47,11 @@
     "experiments": {
       "typedRoutes": true
     },
-    "entryPoint": "./App.js"
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "1d1af157-f197-4592-857-18212a06be64"
+      }
+    }
   }
 }
