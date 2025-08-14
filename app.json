@@ -3,6 +3,7 @@
     "name": "Matacucarachas",
     "slug": "mata-cucarachas",
     "version": "1.0.0",
+    "owner": "grdesignmaster",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "matacucarachas",
@@ -41,8 +42,7 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
-      ],
-      "expo-audio"
+      ]
     ],
     "experiments": {
       "typedRoutes": true
@@ -50,7 +50,7 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "1d1af157-f197-4592-857-18212a06be64"
+        "projectId": "1d1af157-f197-4592-85c7-18212a06be64"
       }
     }
   }
