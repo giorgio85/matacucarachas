@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, ImageBackground, Image, StyleSheet, Dimensions, Animated } from 'react-native';
+import { View, Text, ImageBackground, Image, StyleSheet, Dimensions, Animated, TouchableWithoutFeedback } from 'react-native';
 import { Accelerometer } from 'expo-sensors';
 // Note: expo-av is deprecated but still functional. Will update when a stable replacement is available.
 import { Audio } from 'expo-av';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Haptics from 'expo-haptics';
 import squishSound from '../assets/audios/splatter.mp3';
 
 
@@ -250,6 +251,9 @@ export default function App() {
         if (cockroachToKill) {
           killCockroach(cockroachToKill);
           
+          // Add haptic feedback for stomping
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          
           // Add satisfying shoe stomp animation
           Animated.sequence([
             Animated.timing(shoeY, { 
@@ -392,81 +396,137 @@ export default function App() {
             top: (c.y as any)._value,
             opacity: (c.opacity as any)._value,
             width: c.size,
-            height: c.size * 0.6
+            height: c.size * 0.6,
+            // Add subtle glow for alive cockroaches to indicate they're tappable
+            ...(c.alive && {
+              shadowColor: '#FFD700',
+              shadowOffset: { width: 0, height: 0 },
+              shadowOpacity: 0.3,
+              shadowRadius: 3,
+            })
           }
         ]}
       />
     )), [cockroachesRef.current.length, score]);
 
   return (
-    <ImageBackground source={tilesImg} style={styles.container}>
-      {/* Enhanced Top Bar */}
-      <View style={styles.topBar}>
-        {/* Score and Level Row */}
-        <View style={styles.topRow}>
-          <View style={styles.scoreContainer}>
-            <Text style={styles.scoreLabel}>SCORE</Text>
-            <Text style={styles.scoreValue}>{score}</Text>
-          </View>
+    <TouchableWithoutFeedback
+      onPress={() => {
+        // Trigger havaianas stomp action on screen tap
+        const cockroachToKill = cockroachesRef.current.find(c => c.alive && isUnderHavaiana(c));
+        if (cockroachToKill) {
+          killCockroach(cockroachToKill);
           
-          <View style={styles.levelContainer}>
-            <Text style={styles.levelLabel}>LEVEL</Text>
-            <Animated.Text 
-              style={[
-                styles.levelValue,
-                { transform: [{ scale: levelUpAnimation }] }
-              ]}
-            >
-              {level}
-              {isLevelUp && ' 🎉'}
-            </Animated.Text>
-          </View>
+          // Add haptic feedback for stomping
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
           
-          <View style={styles.bestContainer}>
-            <Text style={styles.bestLabel}>BEST</Text>
-            <Text style={[
-              styles.bestValue,
-              isNewRecord && styles.newRecord
-            ]}>
-              {bestScore}
-              {isNewRecord && ' 🏆'}
-            </Text>
-          </View>
-        </View>
-
-        {/* Progress Bar Row */}
-        <View style={styles.progressRow}>
-          <View style={styles.progressContainer}>
-            <Text style={styles.progressLabel}>
-              Next level: {score % gameConfig.pointsPerLevel}/{gameConfig.pointsPerLevel}
-            </Text>
-            <View style={styles.progressBar}>
-              <View 
+          // Add satisfying shoe stomp animation
+          Animated.sequence([
+            Animated.timing(shoeY, { 
+              toValue: height - 350, 
+              duration: 50, // Fast stomp down
+              useNativeDriver: true 
+            }),
+            Animated.timing(shoeY, { 
+              toValue: height - 450, 
+              duration: 50, // Fast stomp back up
+              useNativeDriver: true 
+            })
+          ]).start();
+        } else {
+          // Even if no cockroach is under the shoe, still do the stomp animation
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          Animated.sequence([
+            Animated.timing(shoeY, { 
+              toValue: height - 350, 
+              duration: 50,
+              useNativeDriver: true 
+            }),
+            Animated.timing(shoeY, { 
+              toValue: height - 450, 
+              duration: 50,
+              useNativeDriver: true 
+            })
+          ]).start();
+        }
+      }}
+    >
+      <ImageBackground source={tilesImg} style={styles.container}>
+        {/* Enhanced Top Bar */}
+        <View style={styles.topBar}>
+          {/* Score and Level Row */}
+          <View style={styles.topRow}>
+            <View style={styles.scoreContainer}>
+              <Text style={styles.scoreLabel}>SCORE</Text>
+              <Text style={styles.scoreValue}>{score}</Text>
+            </View>
+            
+            <View style={styles.levelContainer}>
+              <Text style={styles.levelLabel}>LEVEL</Text>
+              <Animated.Text 
                 style={[
-                  styles.progressFill, 
-                  { width: `${getLevelProgress(score, level) * 100}%` }
-                ]} 
-              />
+                  styles.levelValue,
+                  { transform: [{ scale: levelUpAnimation }] }
+                ]}
+              >
+                {level}
+                {isLevelUp && ' 🎉'}
+              </Animated.Text>
+            </View>
+            
+            <View style={styles.bestContainer}>
+              <Text style={styles.bestLabel}>BEST</Text>
+              <Text style={[
+                styles.bestValue,
+                isNewRecord && styles.newRecord
+              ]}>
+                {bestScore}
+                {isNewRecord && ' 🏆'}
+              </Text>
             </View>
           </View>
+
+          {/* Progress Bar Row */}
+          <View style={styles.progressRow}>
+            <View style={styles.progressContainer}>
+              <Text style={styles.progressLabel}>
+                Next level: {score % gameConfig.pointsPerLevel}/{gameConfig.pointsPerLevel}
+              </Text>
+              <View style={styles.progressBar}>
+                <View 
+                  style={[
+                    styles.progressFill, 
+                    { width: `${getLevelProgress(score, level) * 100}%` }
+                  ]} 
+                />
+              </View>
+            </View>
+          </View>
+
+          {/* Speed Row */}
+          <View style={styles.speedRow}>
+            <Text style={styles.speedLabel}>SPEED</Text>
+            <Text style={styles.speedValue}>{Math.round(getDynamicSpeed(1) * 100)}%</Text>
+          </View>
+
+          {/* Instructions Row */}
+          <View style={styles.instructionsRow}>
+            <Text style={styles.instructionsText}>
+              💡 Tap anywhere on screen or shake phone to stomp with havaianas
+            </Text>
+          </View>
         </View>
 
-        {/* Speed Row */}
-        <View style={styles.speedRow}>
-          <Text style={styles.speedLabel}>SPEED</Text>
-          <Text style={styles.speedValue}>{Math.round(getDynamicSpeed(1) * 100)}%</Text>
-        </View>
-      </View>
-
-      {cockroachList}
-      <Image
-        source={havaianasImg}
-        style={[
-          styles.havaianas,
-          { top: (shoeY as any)._value, left: 0, width: 340, height: 640 * 0.6 }
-        ]}
-      />
-    </ImageBackground>
+        {cockroachList}
+        <Image
+          source={havaianasImg}
+          style={[
+            styles.havaianas,
+            { top: (shoeY as any)._value, left: 0, width: 340, height: 640 * 0.6 }
+          ]}
+        />
+      </ImageBackground>
+    </TouchableWithoutFeedback>
   );
 }
 
@@ -589,5 +649,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   cockroach: { position: 'absolute' },
-  havaianas: { position: 'absolute', zIndex: 10 }
+  havaianas: { position: 'absolute', zIndex: 10 },
+  instructionsRow: {
+    marginTop: 10,
+    alignItems: 'center',
+  },
+  instructionsText: {
+    fontSize: 10,
+    color: '#666',
+    textAlign: 'center',
+  },
 }); 
