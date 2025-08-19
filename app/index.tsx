@@ -34,7 +34,7 @@ export default function App() {
   const [bestScore, setBestScore] = useState(0);
   const [level, setLevel] = useState(1);
   const [lastZ, setLastZ] = useState(0);
-  const [shoeY] = useState(new Animated.Value(height - 550));
+  const [shoeY] = useState(new Animated.Value(height - 500)); // Moved lower (was height - 550)
   const [gameTime, setGameTime] = useState(0); // Track game time for difficulty scaling
   const [isNewRecord, setIsNewRecord] = useState(false);
   const [isLevelUp, setIsLevelUp] = useState(false);
@@ -43,18 +43,18 @@ export default function App() {
   
   // Performance: Memoize constants for smoother gameplay
   const gameConstants = useMemo(() => ({
-    maxCockroaches: 12, // Reduced to prevent performance issues
-    maxDeadCockroaches: 8, // Limit dead cockroaches on screen
-    spawnInterval: 600, // Slightly slower spawning for better performance
+    maxCockroaches: 8, // Reduced to 6 to prevent large groups
+    maxDeadCockroaches: 2, // Limit dead cockroaches to 2
+    spawnInterval: 900, // Slower spawning to prevent groups
     moveInterval: 16, // 60 FPS movement for smooth animation
     accelerometerInterval: 16, // 60 FPS accelerometer for responsive controls
     hitThreshold: 1.2, // Slightly more sensitive for better feel
-    cleanupInterval: 2000, // Clean up dead cockroaches every 2 seconds
+    cleanupInterval: 1500, // Clean up dead cockroaches every 1.5 seconds
     gameTimeInterval: 1000, // Update game time every second
     shoeDimensions: {
       left: 0,
-      right: 340,
-      height: 640 * 0.6
+      right: 300, // Increased from 240 to make shoe wider
+      height: 500 * 0.6 // Increased from 400 to make shoe bigger
     }
   }), []);
 
@@ -67,8 +67,10 @@ export default function App() {
   // Performance: Calculate dynamic spawn interval based on game time
   const getDynamicSpawnInterval = useCallback(() => {
     const baseInterval = gameConstants.spawnInterval;
-    const timeMultiplier = Math.max(0.3, 1 - (gameTime / 60)); // Min 0.3x interval after 60 seconds
-    return baseInterval * timeMultiplier;
+    const timeMultiplier = Math.max(0.6, 1 - (gameTime / 90)); // Min 0.6x interval after 90 seconds (less aggressive)
+    // Add some randomization to prevent synchronized spawning
+    const randomFactor = 0.8 + Math.random() * 0.4; // 0.8x to 1.2x variation
+    return baseInterval * timeMultiplier * randomFactor;
   }, [gameTime, gameConstants.spawnInterval]);
 
   // Performance: Memoize the playSquish function
@@ -181,6 +183,22 @@ export default function App() {
       speedY = (Math.random() - 0.5) * baseSpeedY;
     }
 
+    // Check if there are too many cockroaches in the spawn area (prevent groups)
+    const spawnAreaRadius = 150;
+    const nearbyCockroaches = cockroachesRef.current.filter(c => {
+      if (!c.alive) return false;
+      const distance = Math.sqrt(
+        Math.pow((c.x as any)._value - startX, 2) + 
+        Math.pow((c.y as any)._value - startY, 2)
+      );
+      return distance < spawnAreaRadius;
+    }).length;
+
+    // Don't spawn if there are already 2+ cockroaches nearby
+    if (nearbyCockroaches >= 2) {
+      return;
+    }
+
     const newCockroach: Cockroach = {
       id: Date.now() + Math.random(),
       x: new Animated.Value(startX),
@@ -199,8 +217,8 @@ export default function App() {
 
   // Performance: Ultra-smooth movement with 60 FPS and dynamic speed
   const moveCockroaches = useCallback(() => {
-    const shoeX = 170;
-    const shoeYValue = (shoeY as any)._value + 320;
+    const shoeX = 150; // Adjusted for wider shoe (was 170)
+    const shoeYValue = (shoeY as any)._value + 280; // Adjusted for larger shoe (was +240)
 
     cockroachesRef.current.forEach(c => {
       if (!c.alive) return;
@@ -258,12 +276,12 @@ export default function App() {
           // Add satisfying shoe stomp animation
           Animated.sequence([
             Animated.timing(shoeY, { 
-              toValue: height - 350, 
+              toValue: height - 200, // Adjusted for new position (was height - 350)
               duration: 50, // Fast stomp down
               useNativeDriver: true 
             }),
             Animated.timing(shoeY, { 
-              toValue: height - 450, 
+              toValue: height - 300, // Adjusted for new position (was height - 450)
               duration: 50, // Fast stomp back up
               useNativeDriver: true 
             })
@@ -285,9 +303,19 @@ export default function App() {
 
   // Performance: Optimize intervals for smoother gameplay with dynamic difficulty
   useEffect(() => {
-    const dynamicSpawnInterval = getDynamicSpawnInterval();
-    const spawnInterval = setInterval(spawnCockroach, dynamicSpawnInterval);
-    return () => clearInterval(spawnInterval);
+    // Spawn first cockroach after a short delay
+    const initialSpawn = setTimeout(() => spawnCockroach(), 500);
+    
+    // Then set up regular spawning with dynamic intervals
+    const spawnInterval = setInterval(() => {
+      const interval = getDynamicSpawnInterval();
+      spawnCockroach();
+    }, 1000); // Check every second, but use dynamic intervals
+    
+    return () => {
+      clearTimeout(initialSpawn);
+      clearInterval(spawnInterval);
+    };
   }, [spawnCockroach, getDynamicSpawnInterval]);
 
   useEffect(() => {
@@ -424,12 +452,12 @@ export default function App() {
           // Add satisfying shoe stomp animation
           Animated.sequence([
             Animated.timing(shoeY, { 
-              toValue: height - 350, 
+              toValue: height - 200, // Adjusted for new position (was height - 350)
               duration: 50, // Fast stomp down
               useNativeDriver: true 
             }),
             Animated.timing(shoeY, { 
-              toValue: height - 450, 
+              toValue: height - 300, // Adjusted for new position (was height - 450)
               duration: 50, // Fast stomp back up
               useNativeDriver: true 
             })
@@ -517,6 +545,12 @@ export default function App() {
             <Text style={styles.speedValue}>{Math.round(getDynamicSpeed(1) * 100)}%</Text>
           </View>
 
+          {/* Cockroach Count Row */}
+          <View style={styles.countRow}>
+            <Text style={styles.countLabel}>🐜 ALIVE: {cockroachesRef.current.filter(c => c.alive).length}/{gameConstants.maxCockroaches}</Text>
+            <Text style={styles.countLabel}>💀 DEAD: {cockroachesRef.current.filter(c => !c.alive).length}/{gameConstants.maxDeadCockroaches}</Text>
+          </View>
+
           {/* Instructions Row */}
           <View style={styles.instructionsRow}>
             <Text style={styles.instructionsText}>
@@ -530,7 +564,7 @@ export default function App() {
           source={havaianasImg}
           style={[
             styles.havaianas,
-            { top: (shoeY as any)._value, left: 0, width: 340, height: 640 * 0.6 }
+            { top: (shoeY as any)._value, left: 0, width: 300, height: 500 * 0.6 }
           ]}
         />
 
@@ -702,6 +736,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#D32F2F',
     fontWeight: 'bold',
+  },
+  countRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 10,
+    marginBottom: 10,
+  },
+  countLabel: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '600',
   },
   cockroach: { position: 'absolute' },
   havaianas: { position: 'absolute', zIndex: 10 },
