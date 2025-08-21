@@ -1,10 +1,10 @@
 # Privacy Policy for Mata Cucarachas
 
-**Last updated:** [Current Date]
+**Last updated:** 21-08-2025
 
 **App Name:** Mata Cucarachas  
-**Developer:** [Your Developer Name]  
-**Contact:** [Your Email Address]
+**Developer:** Giorgio Rossi 
+**Contact:** grdesignmaster@gmail.com
 
 ## Introduction
 
@@ -88,7 +88,7 @@ We may update this Privacy Policy from time to time. We will notify you of any c
 
 If you have any questions about this Privacy Policy or our data practices, please contact us at:
 
-**Email:** [Your Email Address]  
+**Email:** grdesignmaster@gmail.com  
 **Subject:** Privacy Policy Inquiry - Mata Cucarachas
 
 ## Legal Information
